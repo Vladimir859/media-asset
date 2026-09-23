@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaAsset — Учёт оборудования</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style/style.css">
+  <link rel="stylesheet" href="./style/modal.css">
+  <link rel="stylesheet" href="./style/modal-delete.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="3" width="9" height="7" rx="1" stroke="white" stroke-width="1.3"/>
+        <path d="M10 6.5l4-2v7l-4-2V6.5z" stroke="white" stroke-width="1.3"/>
+        <path d="M3 12h6" stroke="white" stroke-width="1.3"/>
+        <path d="M6 12v2" stroke="white" stroke-width="1.3"/>
+      </svg>
+    </div>
+    <span class="logo-name">MediaAsset</span>
+    <div class="logo-divider"></div>
+    <span class="logo-sub">Учёт оборудования</span>
+  </div>
+
+  <nav>
+    <a href="#" class="active">Оборудование</a>
+    <a href="/components/Events.html">Мероприятия</a>
+    <!--<a href="#">Локации</a>-->
+    <a href="/components/Users.html" data-role="admin">Пользователи</a>
+    <a href="/components/Reports.html" class="active" data-role="admin">Отчёты</a>
+  </nav>
+
+  <div class="header-user">
+    <div class="user-avatar" id="avatarInitials">?</div>
+    <span id="headerUsername">Загрузка…</span>
+    <button onclick="logout()" style="
+      margin-left:12px;height:28px;padding:0 10px;
+      border:1px solid rgba(255,255,255,0.25);border-radius:5px;
+      background:transparent;color:rgba(255,255,255,0.7);
+      font-family:inherit;font-size:12px;cursor:pointer;">
+      Выйти
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Оборудование</h1>
+      <p class="page-subtitle">Реестр мультимедийного оборудования</p>
+    </div>
+    <button class="btn btn-primary" data-role="admin,manager" onclick="openModal()">Добавить</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Всего единиц</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-delta">в реестре</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Доступно</div>
+      <div class="stat-value" id="statAvailable">—</div>
+      <div class="stat-delta">готово к выдаче</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Используется</div>
+      <div class="stat-value" id="statInUse">—</div>
+      <div class="stat-delta">в эксплуатации</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">На обслуживании</div>
+      <div class="stat-value" id="statMaintenance">—</div>
+      <div class="stat-delta">требует внимания</div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBanner">
+    Не удалось подключиться к серверу. Проверьте API.
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Поиск..." />
+      </div>
+      <select id="statusFilter">
+        <option value="">Все статусы</option>
+        <option value="available">Доступно</option>
+        <option value="in_use">Используется</option>
+        <option value="maintenance">Обслуживание</option>
+      </select>
+      <select id="locationFilter">
+        <option value="">Все локации</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="equipmentTable">
+      <thead>
+        <tr>
+          <th onclick="sortBy('name')">Оборудование</th>
+          <th onclick="sortBy('inventory_number')">Инв. номер</th>
+          <th onclick="sortBy('status')">Статус</th>
+          <th onclick="sortBy('location')">Локация</th>
+          <th onclick="sortBy('user')">Ответственный</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr class="loading-row"><td colspan="6">Загрузка данных…</td></tr>
+      </tbody>
+    </table>
+    <div class="pagination" id="pagination" style="display:none;">
+      <span id="pagInfo"></span>
+      <div id="pagButtons"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="label">equipment</span>
+          <h2>Новое оборудование</h2>
+        </div>
+        <button class="btn-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="field" id="field-name">
+            <label>Наименование <span class="req">*</span></label>
+            <input type="text" id="name" placeholder="Напр.: Проектор Epson EB-X51">
+            <span class="field-error">Заполните наименование</span>
+          </div>
+          <div class="field" id="field-inventory">
+            <label>Инвентарный номер <span class="req">*</span></label>
+            <input type="text" id="inventory_number" placeholder="INV-0000">
+            <span class="field-hint">Формат: INV-XXXX</span>
+            <span class="field-error">Введите инвентарный номер</span>
+          </div>
+        </div>
+        <div class="field full" id="field-desc">
+          <label>Описание</label>
+          <textarea id="description" placeholder="Дополнительная информация об оборудовании..."></textarea>
+        </div>
+        <div class="divider">Привязка</div>
+        <div class="form-row">
+          <div class="field" id="field-status">
+            <label>Статус <span class="req">*</span></label>
+            <select id="status_id">
+              <option value="">— Выберите —</option>
+              <option value="1">Cвободно</option>
+              <option value="2">Используется</option>
+              <option value="3">Сломано</option>
+              <option value="4">Ремонт</option>
+              
+            </select>
+            <span class="field-error">Выберите статус</span>
+          </div>
+          <div class="field" id="field-location">
+            <label>Расположение <span class="req">*</span></label>
+            <select id="location_id">
+              <option value="">— Выберите —</option>
+              <option value="1">Зал А</option>
+              <option value="2">Зал Б</option>
+              <option value="3">Студия 1</option>
+              <option value="4">Студия 2</option>
+              <option value="5">Склад №1</option>
+              <option value="6">Склад №2</option>
+            </select>
+            <span class="field-error">Выберите расположение</span>
+          </div>
+        </div>
+        <div class="field" id="field-user">
+          <label>Ответственный пользователь</label>
+          <select id="user_id">
+            <option value="">— Не назначен —</option>
+            <option value="1">Иванов И.И.</option>
+            <option value="2">Петров С.Н.</option>
+            <option value="3">Сидорова А.В.</option>
+            <option value="4">Козлов Д.Р.</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+        <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+          <div class="spinner"></div>
+          <span class="btn-label">Сохранить</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- auth-check первым — до остальных скриптов -->
+<script src="./backend/auth-check.js"></script>
+<script src="./backend/modal-delete.js"></script>
+<script src="./backend/main.js"></script>
+<script src="./backend/modal.js"></script>
+
+</body>
+</html>

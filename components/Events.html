@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaAsset — Мероприятия</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style/style.css" />
+  <link rel="stylesheet" href="../style/events.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="3" width="9" height="7" rx="1" stroke="white" stroke-width="1.3"/>
+        <path d="M10 6.5l4-2v7l-4-2V6.5z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M3 12h6" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M6 12v2" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">MediaAsset</span>
+    <div class="logo-divider"></div>
+    <span class="logo-sub">Учёт оборудования</span>
+  </div>
+  <nav>
+    <a href="/index.html">Оборудование</a>
+    <a href="/components/Events.html" class="active">Мероприятия</a>
+    <a href="/components/Users.html" data-role="admin">Пользователи</a>
+    <a href="/components/Reports.html" class="active" data-role="admin">Отчёты</a>
+  </nav>
+  <div class="header-user">
+    <div class="user-avatar" id="avatarInitials">?</div>
+    <span id="headerUsername">Загрузка…</span>
+    <button onclick="logout()" style="
+      margin-left:12px;height:28px;padding:0 10px;
+      border:1px solid rgba(255,255,255,0.25);border-radius:5px;
+      background:transparent;color:rgba(255,255,255,0.7);
+      font-family:inherit;font-size:12px;cursor:pointer;">
+      Выйти
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Мероприятия</h1>
+      <p class="page-subtitle">Текущие и завершённые события</p>
+    </div>
+    <button class="btn btn-primary" data-role="admin,manager" onclick="openCreateModal()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M6.5 2v9M2 6.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      Создать мероприятие
+    </button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Всего</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-delta">мероприятий</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Активных</div>
+      <div class="stat-value" id="statActive" style="color:var(--status-inuse-text)">—</div>
+      <div class="stat-delta">сейчас идут</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Завершено</div>
+      <div class="stat-value" id="statDone" style="color:var(--status-available-text)">—</div>
+      <div class="stat-delta">за всё время</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Запланировано</div>
+      <div class="stat-value" id="statPlanned" style="color:var(--text-secondary)">—</div>
+      <div class="stat-delta">предстоит</div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBanner">
+    Не удалось подключиться к серверу. Показаны демо-данные.
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-wrap">
+        <svg viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M9.5 9.5l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Поиск по названию или ответственному…" />
+      </div>
+      <select id="statusFilter">
+        <option value="">Все статусы</option>
+        <option value="active">Активные</option>
+        <option value="planned">Запланированные</option>
+        <option value="finished">Завершённые</option>
+      </select>
+    </div>
+    <button class="btn btn-ghost" onclick="loadEvents()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M11.5 6.5A5 5 0 1 1 9 2.27" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M11.5 2v4.5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Обновить
+    </button>
+  </div>
+
+  <div class="events-grid" id="eventsGrid">
+    <div class="events-loading">Загрузка…</div>
+  </div>
+
+</main>
+
+<div class="modal-backdrop" id="detailBackdrop" onclick="closeDetailModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="detailName">—</h2>
+        <span class="status-badge" id="detailStatus"></span>
+      </div>
+      <button class="modal-close" onclick="closeDetailModal()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Ответственный</div>
+          <div class="detail-value" id="detailResponsible">—</div>
+          <div class="detail-sub" id="detailEmail"></div>
+          <div class="detail-sub" id="detailPhone"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Место проведения</div>
+          <div class="detail-value" id="detailLocation">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Начало</div>
+          <div class="detail-value" id="detailStart">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Окончание</div>
+          <div class="detail-value" id="detailEnd">—</div>
+        </div>
+      </div>
+      <div class="timer-block" id="timerBlock" style="display:none;">
+        <div class="timer-label">До окончания</div>
+        <div class="timer-value" id="timerValue">—</div>
+      </div>
+      <div id="detailDescWrap" style="display:none;">
+        <div class="section-label">Описание</div>
+        <p class="detail-desc" id="detailDesc"></p>
+      </div>
+      <div id="detailCommentWrap" style="display:none;">
+        <div class="section-label">Комментарий</div>
+        <p class="detail-desc" id="detailComment"></p>
+      </div>
+      <div class="section-label">Оборудование</div>
+      <div class="equip-list" id="detailEquipList">
+        <div class="equip-loading">Загрузка…</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDetailModal()">Закрыть</button>
+      <button class="btn btn-danger" id="finishBtn" data-role="admin,manager" onclick="finishCurrentEvent()" style="display:none;">
+        Завершить мероприятие
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="createBackdrop" onclick="closeCreateModal()">
+  <div class="modal modal-lg" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Новое мероприятие</h2>
+      <button class="modal-close" onclick="closeCreateModal()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Название *</label>
+          <input type="text" id="fName" class="form-input" placeholder="Название мероприятия" />
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Описание</label>
+          <textarea id="fDesc" class="form-input form-textarea" placeholder="Краткое описание…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ответственный *</label>
+          <select id="fUser" class="form-input"><option value="">Выберите…</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Место проведения</label>
+          <select id="fLocation" class="form-input"><option value="">Выберите…</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Начало *</label>
+          <input type="datetime-local" id="fStart" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Окончание</label>
+          <input type="datetime-local" id="fEnd" class="form-input" />
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Комментарий</label>
+          <input type="text" id="fComment" class="form-input" placeholder="Необязательно" />
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:1.5rem;">
+        Оборудование
+        <span class="section-hint">только свободное</span>
+      </div>
+      <div class="equip-picker" id="equipPicker">
+        <div class="equip-loading">Загрузка доступного оборудования…</div>
+      </div>
+      <div class="form-error" id="formError" style="display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCreateModal()">Отмена</button>
+      <button class="btn btn-primary" data-role="admin,manager" onclick="submitCreateEvent()">
+        Создать мероприятие
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script src="../backend/auth-check.js"></script>
+<script type="module" src="../backend/events.js"></script>
+</body>
+</html>

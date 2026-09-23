@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaAsset — Отчёты</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style/style.css" />
+  <style>
+    .logs-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .logs-table thead {
+      background: #F8F7F4;
+    }
+
+    .logs-table th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .logs-table td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .logs-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .logs-table tr:hover td {
+      background: var(--bg);
+    }
+
+    .action-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .action-create_event {
+      background: var(--status-available-bg);
+      color: var(--status-available-text);
+    }
+
+    .action-finish_event {
+      background: var(--status-other-bg);
+      color: var(--status-other-text);
+    }
+
+    .action-create_equipment {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .action-delete_equipment,
+    .action-delete_event {
+      background: var(--status-repair-bg);
+      color: var(--status-repair-text);
+    }
+
+    .action-default {
+      background: var(--status-inuse-bg);
+      color: var(--status-inuse-text);
+    }
+
+    .log-time {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .log-details {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .log-entity {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+
+    .logs-empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .logs-loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .access-denied {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--status-repair-text);
+    }
+
+    .access-denied svg {
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .access-denied h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .access-denied p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .action-create_user {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .action-update_user {
+      background: var(--status-inuse-bg);
+      color: var(--status-inuse-text);
+    }
+    .action-delete_user {
+      background: var(--status-repair-bg);
+      color: var(--status-repair-text);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="3" width="9" height="7" rx="1" stroke="white" stroke-width="1.3"/>
+        <path d="M10 6.5l4-2v7l-4-2V6.5z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M3 12h6" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M6 12v2" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">MediaAsset</span>
+    <div class="logo-divider"></div>
+    <span class="logo-sub">Учёт оборудования</span>
+  </div>
+  <nav>
+    <a href="/index.html">Оборудование</a>
+    <a href="/components/Events.html">Мероприятия</a>
+    <a href="/components/Users.html" data-role="admin">Пользователи</a>
+    <a href="/components/Reports.html" class="active" data-role="admin">Отчёты</a>
+  </nav>
+  <div class="header-user">
+    <div class="user-avatar" id="avatarInitials">?</div>
+    <span id="headerUsername">Загрузка…</span>
+    <button onclick="logout()" style="
+      margin-left:12px;height:28px;padding:0 10px;
+      border:1px solid rgba(255,255,255,0.25);border-radius:5px;
+      background:transparent;color:rgba(255,255,255,0.7);
+      font-family:inherit;font-size:12px;cursor:pointer;">
+      Выйти
+    </button>
+  </div>
+</header>
+
+<main id="mainContent" style="display:none;">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Отчёты</h1>
+      <p class="page-subtitle">Журнал действий пользователей в системе</p>
+    </div>
+    <button class="btn btn-ghost" onclick="loadLogs()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M11.5 6.5A5 5 0 1 1 9 2.27" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M11.5 2v4.5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Обновить
+    </button>
+  </div>
+
+  <div class="stats-row" style="grid-template-columns: repeat(3,1fr); margin-bottom:1.5rem;">
+    <div class="stat-card">
+      <div class="stat-label">Всего записей</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-delta">в журнале</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Сегодня</div>
+      <div class="stat-value" id="statToday" style="color:var(--status-available-text)">—</div>
+      <div class="stat-delta">действий</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Пользователей</div>
+      <div class="stat-value" id="statUsers" style="color:var(--accent-mid)">—</div>
+      <div class="stat-delta">активных</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-wrap">
+        <svg viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M9.5 9.5l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Поиск по пользователю или действию…" />
+      </div>
+      <select id="actionFilter">
+        <option value="">Все действия</option>
+        <option value="create_event">Создание мероприятия</option>
+        <option value="finish_event">Завершение мероприятия</option>
+        <option value="create_equipment">Добавление оборудования</option>
+        <option value="delete_equipment">Удаление оборудования</option>
+        <option value="create_user">Создание пользователя</option>
+        <option value="update_user">Редактирование пользователя</option>
+        <option value="delete_user">Удаление пользователя</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="logs-table-wrap">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Время</th>
+          <th>Пользователь</th>
+          <th>Действие</th>
+          <th>Объект</th>
+          <th>Детали</th>
+        </tr>
+      </thead>
+      <tbody id="logsBody">
+        <tr><td colspan="6" class="logs-loading">Загрузка…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Блок для не-админов -->
+<main id="accessDenied" style="display:none;">
+  <div class="access-denied">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
+      <path d="M16 16l16 16M32 16L16 32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <h2>Доступ запрещён</h2>
+    <p>Страница отчётов доступна только администраторам.</p>
+  </div>
+</main>
+
+<script src="../backend/auth-check.js"></script>
+<script>
+  const API = 'http://localhost:3000/api';
+  let allLogs = [];
+
+  // Ждём пока auth-check загрузит пользователя
+  function waitForUser(cb) {
+    if (window.currentUser) { cb(); return; }
+    setTimeout(() => waitForUser(cb), 50);
+  }
+
+  waitForUser(() => {
+    if (window.currentUser?.role !== 'admin') {
+      document.getElementById('accessDenied').style.display = 'block';
+      return;
+    }
+    document.getElementById('mainContent').style.display = 'block';
+    loadLogs();
+  });
+
+  async function loadLogs() {
+    document.getElementById('logsBody').innerHTML =
+      '<tr><td colspan="6" class="logs-loading">Загрузка…</td></tr>';
+
+    try {
+      const res = await fetch(`${API}/logs`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      allLogs = await res.json();
+    } catch (err) {
+      document.getElementById('logsBody').innerHTML =
+        `<tr><td colspan="6" class="logs-empty">Ошибка загрузки: ${err.message}</td></tr>`;
+      return;
+    }
+
+    updateStats();
+    applyFilters();
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent = allLogs.length;
+
+    const today = new Date().toDateString();
+    const todayCount = allLogs.filter(l =>
+      new Date(l.create_at).toDateString() === today
+    ).length;
+    document.getElementById('statToday').textContent = todayCount;
+
+    const uniqueUsers = new Set(allLogs.map(l => l.user_name).filter(Boolean)).size;
+    document.getElementById('statUsers').textContent = uniqueUsers;
+  }
+
+  function applyFilters() {
+    const q      = document.getElementById('searchInput').value.toLowerCase();
+    const action = document.getElementById('actionFilter').value;
+
+    const filtered = allLogs.filter(l => {
+      const matchQ = !q
+        || l.user_name?.toLowerCase().includes(q)
+        || l.action?.toLowerCase().includes(q)
+        || l.details?.toLowerCase().includes(q);
+      const matchA = !action || l.action === action;
+      return matchQ && matchA;
+    });
+
+    renderLogs(filtered);
+  }
+
+  function renderLogs(logs) {
+    const tbody = document.getElementById('logsBody');
+
+    if (logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="logs-empty">Записи не найдены</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = logs.map((l, i) => `
+      <tr>
+        <td style="color:var(--text-muted);font-family:var(--mono);font-size:11px;">${l.log_id}</td>
+        <td class="log-time">${fmtDatetime(l.create_at)}</td>
+        <td style="font-weight:500;">${esc(l.user_name || '—')}</td>
+        <td><span class="action-badge ${actionClass(l.action)}">${actionLabel(l.action)}</span></td>
+        <td>
+          ${l.entity_type && l.entity_id
+            ? `<span class="log-entity">${esc(l.entity_type)} #${l.entity_id}</span>`
+            : '<span style="color:var(--text-muted)">—</span>'}
+        </td>
+        <td class="log-details">${esc(l.details || '—')}</td>
+      </tr>
+    `).join('');
+  }
+
+  function actionLabel(action) {
+    const labels = {
+      create_event:     'Создание мероприятия',
+      finish_event:     'Завершение мероприятия',
+      create_equipment: 'Добавление оборудования',
+      delete_equipment: 'Удаление оборудования',
+      delete_event:     'Удаление мероприятия',
+      create_user:  'Создание пользователя',
+      update_user:  'Редактирование пользователя',
+      delete_user:  'Удаление пользователя',
+    };
+    return labels[action] || action || '—';
+  }
+
+  function actionClass(action) {
+  const known = [
+    'create_event', 'finish_event',
+    'create_equipment', 'delete_equipment', 'delete_event',
+    'create_user', 'update_user', 'delete_user',
+  ];
+  return known.includes(action) ? `action-${action}` : 'action-default';
+}
+
+  function fmtDatetime(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('ru-RU', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  document.getElementById('searchInput').addEventListener('input', applyFilters);
+  document.getElementById('actionFilter').addEventListener('change', applyFilters);
+</script>
+</body>
+</html>
